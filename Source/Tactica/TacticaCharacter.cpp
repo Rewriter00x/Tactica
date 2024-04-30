@@ -35,6 +35,7 @@ ATacticaCharacter::ATacticaCharacter()
 	HandsMesh->bCastDynamicShadow = false;
 	HandsMesh->CastShadow = false;
 	HandsMesh->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+	HandsMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GetMesh()->SetOwnerNoSee(true);
 }
