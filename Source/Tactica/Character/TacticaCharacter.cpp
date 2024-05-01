@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -38,11 +39,35 @@ ATacticaCharacter::ATacticaCharacter()
 	HandsMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 	GetMesh()->SetOwnerNoSee(true);
+
+	SetCanBeDamaged(true);
+}
+
+void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME_CONDITION(ThisClass, Health, COND_OwnerOnly);
 }
 
 void ATacticaCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.AddDynamic(this, &ATacticaCharacter::AnyDamageTaken);
+	}
+}
+
+void ATacticaCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (HasAuthority())
+	{
+		OnTakeAnyDamage.RemoveDynamic(this, &ATacticaCharacter::AnyDamageTaken);
+	}
+	
+	Super::EndPlay(EndPlayReason);
 }
 
 void ATacticaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -97,4 +122,23 @@ void ATacticaCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ATacticaCharacter::AnyDamageTaken(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
+	AController* InstigatedBy, AActor* DamageCauser)
+{
+	check(this == DamagedActor);
+
+	const float OldHealth = Health;
+	Health -= Damage;
+	OnHealthChanged.Broadcast(Health, OldHealth);
+	if (Health <= 0.f)
+	{
+		Destroy();
+	}
+}
+
+void ATacticaCharacter::OnRep_Health(float OldValue)
+{
+	OnHealthChanged.Broadcast(Health, OldValue);
 }
