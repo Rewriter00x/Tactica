@@ -13,7 +13,7 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, NewHealth, float, OldHealth);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, float);
 
 UCLASS(Abstract, config=Game)
 class ATacticaCharacter : public ACharacter
@@ -24,8 +24,11 @@ public:
 	ATacticaCharacter();
 	
 	FORCEINLINE UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
+	FORCEINLINE float GetHealth() const { return Health; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void Destroyed() override;
 
 	FOnHealthChanged OnHealthChanged;
 

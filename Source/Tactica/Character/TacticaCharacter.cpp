@@ -50,6 +50,13 @@ void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION(ThisClass, Health, COND_OwnerOnly);
 }
 
+void ATacticaCharacter::Destroyed()
+{
+	OnHealthChanged.Broadcast(0.f, Health);
+	
+	Super::Destroyed();
+}
+
 void ATacticaCharacter::BeginPlay()
 {
 	Super::BeginPlay();
