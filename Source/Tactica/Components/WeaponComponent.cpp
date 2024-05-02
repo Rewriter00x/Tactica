@@ -45,13 +45,14 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		OwningCharacter = TargetCharacter;
+		Rename(*GetFName().ToString(), TargetCharacter);
 	}
 
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	AttachToComponent(TargetCharacter->GetHandsMesh(), AttachmentRules, FName(TEXT("GripPoint")));
-
+	AttachToComponent(TargetCharacter->GetHandsMesh(), AttachmentRules, FPSAttachPointName);
+	
 	SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SetOnlyOwnerSee(true);
+	//SetOnlyOwnerSee(true);
 
 	TargetCharacter->AddInstanceComponent(this);
 
