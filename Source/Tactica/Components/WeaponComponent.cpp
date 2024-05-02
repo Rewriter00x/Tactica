@@ -48,11 +48,10 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 		Rename(*GetFName().ToString(), TargetCharacter);
 	}
 
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	AttachToComponent(TargetCharacter->GetHandsMesh(), AttachmentRules, FPSAttachPointName);
+	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+	AttachToComponent(TargetCharacter->GetMesh(), AttachmentRules, TPSAttachPointName);
 	
 	SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	//SetOnlyOwnerSee(true);
 
 	TargetCharacter->AddInstanceComponent(this);
 
