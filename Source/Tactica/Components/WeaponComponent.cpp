@@ -55,14 +55,15 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 
 	TargetCharacter->AddInstanceComponent(this);
 
-	// TODO add mesh to tps
-
 	if (const APlayerController* PlayerController = Cast<APlayerController>(TargetCharacter->GetController()))
 	{
 		if (!PlayerController->IsLocalController())
 		{
 			return;
 		}
+
+		TargetCharacter->SetFPSWeaponMesh(this);
+		SetHiddenInGame(true);
 		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{

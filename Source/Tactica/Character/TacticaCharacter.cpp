@@ -38,6 +38,13 @@ ATacticaCharacter::ATacticaCharacter()
 	HandsMesh->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 	HandsMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	FPSWeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSWeaponMesh"));
+	FPSWeaponMesh->SetupAttachment(HandsMesh, FPSAttachPointName);
+	FPSWeaponMesh->SetOnlyOwnerSee(true);
+	FPSWeaponMesh->bCastDynamicShadow = false;
+	FPSWeaponMesh->CastShadow = false;
+	FPSWeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
 	GetMesh()->SetOwnerNoSee(true);
 
 	SetCanBeDamaged(true);
@@ -55,6 +62,12 @@ void ATacticaCharacter::Destroyed()
 	OnHealthChanged.Broadcast(0.f, Health);
 	
 	Super::Destroyed();
+}
+
+void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const
+{
+	FPSWeaponMesh->SetSkeletalMesh(Weapon->GetSkeletalMeshAsset());
+	FPSWeaponMesh->SetMaterial(0, Weapon->GetMaterial(0));
 }
 
 void ATacticaCharacter::BeginPlay()

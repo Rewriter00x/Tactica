@@ -31,6 +31,8 @@ public:
 
 	virtual void Destroyed() override;
 
+	void SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const;
+
 	FOnHealthChanged OnHealthChanged;
 
 protected:
@@ -52,11 +54,17 @@ private:
 	UFUNCTION()
 	void OnRep_Health(float OldValue);
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Attach, meta=(AllowPrivateAccess = "true"))
+	FName FPSAttachPointName = TEXT("GripPoint");
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCamera;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* HandsMesh;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Mesh, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* FPSWeaponMesh;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
