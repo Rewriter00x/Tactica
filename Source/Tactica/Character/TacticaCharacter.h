@@ -24,6 +24,7 @@ public:
 	ATacticaCharacter();
 	
 	FORCEINLINE UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
+	FORCEINLINE USkeletalMeshComponent* GetHandsMesh() const { return HandsMesh; }
 	FORCEINLINE float GetHealth() const { return Health; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

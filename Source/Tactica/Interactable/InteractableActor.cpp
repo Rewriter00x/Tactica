@@ -11,6 +11,8 @@ AInteractableActor::AInteractableActor()
 	Sphere = CreateDefaultSubobject<USphereComponent>(TEXT("Sphere"));
 	Sphere->SetSphereRadius(200.f);
 	SetRootComponent(Sphere);
+
+	bReplicates = true;
 }
 
 void AInteractableActor::BeginPlay()
