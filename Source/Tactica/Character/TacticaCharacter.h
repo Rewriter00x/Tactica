@@ -5,6 +5,7 @@
 #include "Logging/LogMacros.h"
 #include "TacticaCharacter.generated.h"
 
+class UWeaponComponent;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -31,7 +32,16 @@ public:
 
 	virtual void Destroyed() override;
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_BeginFire(UWeaponComponent* Weapon);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_EndFire(UWeaponComponent* Weapon);
+
 	void SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const;
+
+	FVector GetEyesLocation() const;
+	FVector GetLookAtDirection() const;
 
 	FOnHealthChanged OnHealthChanged;
 

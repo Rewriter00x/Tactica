@@ -8,6 +8,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Net/UnrealNetwork.h"
+#include "Tactica/Components/WeaponComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -64,10 +65,41 @@ void ATacticaCharacter::Destroyed()
 	Super::Destroyed();
 }
 
+bool ATacticaCharacter::Server_BeginFire_Validate(UWeaponComponent* Weapon)
+{
+	return IsValid(Weapon);
+}
+
+void ATacticaCharacter::Server_BeginFire_Implementation(UWeaponComponent* Weapon)
+{
+	Weapon->TraceForTarget();
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER BEGIN FIRE!!!"));
+}
+
+bool ATacticaCharacter::Server_EndFire_Validate(UWeaponComponent* Weapon)
+{
+	return IsValid(Weapon);
+}
+
+void ATacticaCharacter::Server_EndFire_Implementation(UWeaponComponent* Weapon)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
+}
+
 void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const
 {
 	FPSWeaponMesh->SetSkeletalMesh(Weapon->GetSkeletalMeshAsset());
 	FPSWeaponMesh->SetMaterial(0, Weapon->GetMaterial(0));
+}
+
+FVector ATacticaCharacter::GetEyesLocation() const
+{
+	return FirstPersonCamera->GetComponentLocation();
+}
+
+FVector ATacticaCharacter::GetLookAtDirection() const
+{
+	return GetBaseAimRotation().Vector();
 }
 
 void ATacticaCharacter::BeginPlay()

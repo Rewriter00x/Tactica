@@ -17,6 +17,34 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ThisClass, OwningCharacter);
 }
 
+void UWeaponComponent::TraceForTarget()
+{
+	if (ensure(OwningCharacter))
+	{
+		constexpr float BulletPathLength = 275'000.f;
+		
+		const FVector StartLocation = OwningCharacter->GetEyesLocation();
+		const FVector DirectionVector = FMath::VRandCone(
+			OwningCharacter->GetLookAtDirection(),
+			FMath::DegreesToRadians(Spread));
+		const FVector EndLocation = StartLocation + DirectionVector * BulletPathLength;
+
+		FHitResult FiringResult;
+		FCollisionQueryParams Params;
+		Params.bTraceComplex = false;
+		Params.AddIgnoredActor(OwningCharacter);
+		Params.AddIgnoredComponent(this);
+		GetWorld()->LineTraceSingleByChannel(FiringResult, StartLocation, EndLocation, ECC_Visibility, Params);
+
+		DrawDebugLine(GetWorld(), StartLocation, FiringResult.Location, FColor(243, 156, 18), false, .1f, 0, .2f);
+		
+		if (AActor* HitActor = FiringResult.GetActor())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Orange, FString::Printf(TEXT("%s Hit!"), *HitActor->GetFName().ToString()));
+		}
+	}
+}
+
 void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (!OwningCharacter)
@@ -45,7 +73,9 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 	if (GetOwnerRole() == ROLE_Authority)
 	{
 		OwningCharacter = TargetCharacter;
+		UnregisterComponent();
 		Rename(*GetFName().ToString(), TargetCharacter);
+		RegisterComponent();
 	}
 
 	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
@@ -73,17 +103,28 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 		{
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &UWeaponComponent::BeginFire);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UWeaponComponent::EndFire);
+			if (bIsAutomatic)
+			{
+				EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UWeaponComponent::EndFire);
+			}
 		}
 	}
 }
 
 void UWeaponComponent::BeginFire()
 {
+	if (OwningCharacter)
+	{
+		OwningCharacter->Server_BeginFire(this);
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("BEGIN FIRE!!!"));
 }
 
 void UWeaponComponent::EndFire()
 {
+	if (OwningCharacter)
+	{
+		OwningCharacter->Server_EndFire(this);
+	}
 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("END FIRE!!!"));
 }
