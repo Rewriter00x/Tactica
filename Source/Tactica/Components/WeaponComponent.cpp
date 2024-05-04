@@ -16,6 +16,8 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, OwningCharacter);
+	DOREPLIFETIME(ThisClass, LoadedAmmo);
+	DOREPLIFETIME(ThisClass, SpareAmmo);
 }
 
 void UWeaponComponent::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)
@@ -56,9 +58,9 @@ void UWeaponComponent::Shoot()
 {
 	if (bIsAutomatic)
 	{
-		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TraceForTarget, ShotDelay, true, 0.f);
+		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TryShoot, ShotDelay, true, 0.f);
 	}
-	else if (CheckAndChangeLastShotTime())
+	else if (CheckAndCommitCost())
 	{
 		TraceForTarget();
 	}
@@ -69,20 +71,51 @@ void UWeaponComponent::StopAutoFire()
 	GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
 }
 
-bool UWeaponComponent::CheckLastShotTime() const
+void UWeaponComponent::PerformReload()
 {
-	return !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle);
+	int32 Delta = MagazineSize - LoadedAmmo;
+	if (SpareAmmo < Delta && SpareAmmo > 0)
+	{
+		Delta = SpareAmmo;
+	}
+	LoadedAmmo += Delta;
+	SpareAmmo -= Delta;
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
-bool UWeaponComponent::CheckAndChangeLastShotTime()
+void UWeaponComponent::BeginPlay()
 {
-	if (!CheckLastShotTime())
+	Super::BeginPlay();
+
+	LoadedAmmo = MagazineSize;
+	SpareAmmo = MagazineSize * MagazineCount;
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
+}
+
+bool UWeaponComponent::CheckCost() const
+{
+	return (bIsAutomatic || !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle)) && LoadedAmmo > 0;
+}
+
+bool UWeaponComponent::CheckAndCommitCost()
+{
+	if (!CheckCost())
 	{
 		return false;
 	}
-	
-	GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, ShotDelay, false);
+
+	if (!bIsAutomatic)
+	{
+		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, ShotDelay, false);
+	}
+	--LoadedAmmo;
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 	return true;
+}
+
+bool UWeaponComponent::CanReload() const
+{
+	return LoadedAmmo < MagazineSize && SpareAmmo > 0;
 }
 
 void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -116,6 +149,7 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 		UnregisterComponent();
 		Rename(*GetFName().ToString(), TargetCharacter);
 		RegisterComponent();
+		TargetCharacter->SetSelectedWeapon(this);
 	}
 
 	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
@@ -147,6 +181,7 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 			{
 				EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UWeaponComponent::EndFire);
 			}
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &UWeaponComponent::Reload);
 		}
 	}
 }
@@ -162,6 +197,16 @@ void UWeaponComponent::DrawLocalFire(const FVector& Start, const FVector& End) c
 	DrawDebugLine(GetWorld(), Start, End, FColor(243, 156, 18), false, .1f, 0, Local ? .2f : .75f);
 }
 
+void UWeaponComponent::OnRep_LoadedAmmo(int32 OldValue)
+{
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
+}
+
+void UWeaponComponent::OnRep_SpareAmmo(int32 OldValue)
+{
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
+}
+
 void UWeaponComponent::BeginFire()
 {
 	if (!OwningCharacter)
@@ -169,9 +214,9 @@ void UWeaponComponent::BeginFire()
 		return;
 	}
 
-	if (!OwningCharacter->HasAuthority())
+	if (!OwningCharacter->HasAuthority() || !bIsAutomatic)
 	{
-		if (!CheckAndChangeLastShotTime()) // client check
+		if (!CheckAndCommitCost()) // client check
 		{
 			return;
 		}
@@ -188,4 +233,36 @@ void UWeaponComponent::EndFire()
 		OwningCharacter->Server_EndFire(this);
 	}
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("END FIRE!!!"));
+}
+
+void UWeaponComponent::Reload()
+{
+	if (!OwningCharacter)
+	{
+		return;
+	}
+	
+	if (!CanReload())
+	{
+		return;
+	}
+	
+	OwningCharacter->Server_Reload(this);
+
+	if (!OwningCharacter->HasAuthority())
+	{
+		PerformReload();
+	}
+}
+
+void UWeaponComponent::TryShoot()
+{
+	if (CheckAndCommitCost())
+	{
+		TraceForTarget();
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
+	}
 }

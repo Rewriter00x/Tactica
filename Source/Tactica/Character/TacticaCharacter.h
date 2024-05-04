@@ -15,6 +15,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, float);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSelectedWeaponChanged, UWeaponComponent*);
 
 UCLASS(Abstract, config=Game)
 class ATacticaCharacter : public ACharacter
@@ -26,6 +27,7 @@ public:
 	
 	FORCEINLINE UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
 	FORCEINLINE USkeletalMeshComponent* GetHandsMesh() const { return HandsMesh; }
+	FORCEINLINE UWeaponComponent* GetSelectedWeapon() const { return SelectedWeapon; }
 	FORCEINLINE float GetHealth() const { return Health; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -37,13 +39,18 @@ public:
 
 	UFUNCTION(Server, Reliable, WithValidation)
 	void Server_EndFire(UWeaponComponent* Weapon);
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Reload(UWeaponComponent* Weapon);
 
 	void SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const;
+	void SetSelectedWeapon(UWeaponComponent* Weapon);
 
 	FVector GetEyesLocation() const;
 	FVector GetLookAtDirection() const;
 
 	FOnHealthChanged OnHealthChanged;
+	FOnSelectedWeaponChanged OnSelectedWeaponChanged;
 
 protected:
 	virtual void BeginPlay() override;
@@ -63,6 +70,9 @@ private:
 
 	UFUNCTION()
 	void OnRep_Health(float OldValue);
+
+	UFUNCTION()
+	void OnRep_SelectedWeapon(UWeaponComponent* OldValue);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Attach, meta=(AllowPrivateAccess = "true"))
 	FName FPSAttachPointName = TEXT("GripPoint");
@@ -87,6 +97,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
+
+	UPROPERTY(ReplicatedUsing=OnRep_SelectedWeapon, Transient)
+	UWeaponComponent* SelectedWeapon = nullptr;
 
 };
 

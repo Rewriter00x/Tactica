@@ -56,6 +56,7 @@ void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME_CONDITION(ThisClass, Health, COND_OwnerOnly);
+	DOREPLIFETIME(ThisClass, SelectedWeapon);
 }
 
 void ATacticaCharacter::Destroyed()
@@ -87,10 +88,26 @@ void ATacticaCharacter::Server_EndFire_Implementation(UWeaponComponent* Weapon)
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
 }
 
+bool ATacticaCharacter::Server_Reload_Validate(UWeaponComponent* Weapon)
+{
+	return IsValid(Weapon) && Weapon->CanReload();
+}
+
+void ATacticaCharacter::Server_Reload_Implementation(UWeaponComponent* Weapon)
+{
+	Weapon->PerformReload();
+}
+
 void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const
 {
 	FPSWeaponMesh->SetSkeletalMesh(Weapon->GetSkeletalMeshAsset());
 	FPSWeaponMesh->SetMaterial(0, Weapon->GetMaterial(0));
+}
+
+void ATacticaCharacter::SetSelectedWeapon(UWeaponComponent* Weapon)
+{
+	SelectedWeapon = Weapon;
+	OnSelectedWeaponChanged.Broadcast(SelectedWeapon);
 }
 
 FVector ATacticaCharacter::GetEyesLocation() const
@@ -194,4 +211,9 @@ void ATacticaCharacter::AnyDamageTaken(AActor* DamagedActor, float Damage, const
 void ATacticaCharacter::OnRep_Health(float OldValue)
 {
 	OnHealthChanged.Broadcast(Health, OldValue);
+}
+
+void ATacticaCharacter::OnRep_SelectedWeapon(UWeaponComponent* OldValue)
+{
+	OnSelectedWeaponChanged.Broadcast(SelectedWeapon);
 }
