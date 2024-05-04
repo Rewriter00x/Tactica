@@ -72,7 +72,7 @@ bool ATacticaCharacter::Server_BeginFire_Validate(UWeaponComponent* Weapon)
 
 void ATacticaCharacter::Server_BeginFire_Implementation(UWeaponComponent* Weapon)
 {
-	Weapon->TraceForTarget();
+	Weapon->Shoot();
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER BEGIN FIRE!!!"));
 }
 
@@ -83,6 +83,7 @@ bool ATacticaCharacter::Server_EndFire_Validate(UWeaponComponent* Weapon)
 
 void ATacticaCharacter::Server_EndFire_Implementation(UWeaponComponent* Weapon)
 {
+	Weapon->StopAutoFire();
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
 }
 

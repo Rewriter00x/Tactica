@@ -52,6 +52,46 @@ void UWeaponComponent::TraceForTarget()
 	}
 }
 
+void UWeaponComponent::Shoot()
+{
+	if (bIsAutomatic)
+	{
+		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TraceForTarget, ShotDelay, true, 0.f);
+	}
+	else
+	{
+		if (CheckAndChangeLastShotTime())
+		{
+			TraceForTarget();
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("FAILED TO SHOOT ON SERVER!!!"));
+		}
+	}
+}
+
+void UWeaponComponent::StopAutoFire()
+{
+	GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
+}
+
+bool UWeaponComponent::CheckLastShotTime() const
+{
+	return !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle);
+}
+
+bool UWeaponComponent::CheckAndChangeLastShotTime()
+{
+	if (!CheckLastShotTime())
+	{
+		return false;
+	}
+	
+	GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, ShotDelay, false);
+	return true;
+}
+
 void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (!OwningCharacter)
@@ -131,6 +171,11 @@ void UWeaponComponent::DrawLocalFire(const FVector& Start, const FVector& End) c
 
 void UWeaponComponent::BeginFire()
 {
+	if (!CheckAndChangeLastShotTime())
+	{
+		return;
+	}
+	
 	if (OwningCharacter)
 	{
 		OwningCharacter->Server_BeginFire(this);

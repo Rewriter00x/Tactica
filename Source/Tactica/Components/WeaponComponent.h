@@ -19,7 +19,13 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_BeginShot(const FVector& Start, const FVector& End);
 
+	bool CheckLastShotTime() const;
+	bool CheckAndChangeLastShotTime();
+	
 	void TraceForTarget();
+
+	void Shoot();
+	void StopAutoFire();
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
@@ -48,6 +54,9 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true"))
 	float BulletDistance = 1000.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true"))
+	float ShotDelay = .5f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "90"))
 	float Spread = 2.f;
 
@@ -56,5 +65,7 @@ private:
 	
 	UPROPERTY(Replicated)
 	ATacticaCharacter* OwningCharacter;
+
+	FTimerHandle ShotDelayHandle;
 	
 };
