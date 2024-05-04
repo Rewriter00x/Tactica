@@ -18,10 +18,13 @@ void ATacticaPlayerController::OnPossessedPawnDestroyed(AActor* DestroyedPawn)
 {
 	if (HasAuthority())
 	{
-		FTimerHandle Handle;
-		GetWorldTimerManager().SetTimer(Handle, [this]
+		FTimerDelegate Delegate;
+		Delegate.BindWeakLambda(this, [this]
 		{
 			GetWorld()->GetAuthGameMode()->RestartPlayer(this);
-		}, 2.f, false);
+		});
+		
+		FTimerHandle Handle;
+		GetWorldTimerManager().SetTimer(Handle, Delegate, 2.f, false);
 	}
 }
