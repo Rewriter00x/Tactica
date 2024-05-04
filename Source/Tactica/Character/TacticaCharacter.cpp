@@ -73,7 +73,7 @@ bool ATacticaCharacter::Server_BeginFire_Validate(UWeaponComponent* Weapon)
 void ATacticaCharacter::Server_BeginFire_Implementation(UWeaponComponent* Weapon)
 {
 	Weapon->TraceForTarget();
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER BEGIN FIRE!!!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER BEGIN FIRE!!!"));
 }
 
 bool ATacticaCharacter::Server_EndFire_Validate(UWeaponComponent* Weapon)
@@ -83,7 +83,7 @@ bool ATacticaCharacter::Server_EndFire_Validate(UWeaponComponent* Weapon)
 
 void ATacticaCharacter::Server_EndFire_Implementation(UWeaponComponent* Weapon)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
 }
 
 void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const

@@ -2,6 +2,7 @@
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Tactica/Character/TacticaCharacter.h"
 
@@ -17,30 +18,36 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ThisClass, OwningCharacter);
 }
 
+void UWeaponComponent::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)
+{
+	DrawLocalFire(Start, End);
+}
+
 void UWeaponComponent::TraceForTarget()
 {
 	if (ensure(OwningCharacter))
 	{
-		constexpr float BulletPathLength = 275'000.f;
-		
 		const FVector StartLocation = OwningCharacter->GetEyesLocation();
 		const FVector DirectionVector = FMath::VRandCone(
 			OwningCharacter->GetLookAtDirection(),
 			FMath::DegreesToRadians(Spread));
-		const FVector EndLocation = StartLocation + DirectionVector * BulletPathLength;
+		const FVector EndLocation = StartLocation + DirectionVector * BulletDistance;
 
 		FHitResult FiringResult;
 		FCollisionQueryParams Params;
 		Params.bTraceComplex = false;
 		Params.AddIgnoredActor(OwningCharacter);
 		Params.AddIgnoredComponent(this);
-		GetWorld()->LineTraceSingleByChannel(FiringResult, StartLocation, EndLocation, ECC_Visibility, Params);
+		GetWorld()->LineTraceSingleByChannel(FiringResult, StartLocation, EndLocation, ECC_Pawn, Params);
 
-		DrawDebugLine(GetWorld(), StartLocation, FiringResult.Location, FColor(243, 156, 18), false, .1f, 0, .2f);
+		const FVector& HitLocation = FiringResult.Location.IsNearlyZero() ? EndLocation : FiringResult.Location;
+
+		Multicast_BeginShot(StartLocation, HitLocation);
 		
-		if (AActor* HitActor = FiringResult.GetActor())
+		if (ATacticaCharacter* HitCharacter = Cast<ATacticaCharacter>(FiringResult.GetActor()))
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Orange, FString::Printf(TEXT("%s Hit!"), *HitActor->GetFName().ToString()));
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%s hit!"), *HitCharacter->GetFName().ToString()));
+			UGameplayStatics::ApplyDamage(HitCharacter, DamagePerBullet, nullptr, OwningCharacter, UDamageType::StaticClass());
 		}
 	}
 }
@@ -111,13 +118,24 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 	}
 }
 
+void UWeaponComponent::DrawLocalFire(const FVector& Start, const FVector& End) const
+{
+	bool Local = false;
+	const AController* Controller = OwningCharacter ? OwningCharacter->GetController() : nullptr;
+	if (Controller && Controller->IsLocalPlayerController())
+	{
+		Local = true;
+	}
+	DrawDebugLine(GetWorld(), Start, End, FColor(243, 156, 18), false, .1f, 0, Local ? .2f : .75f);
+}
+
 void UWeaponComponent::BeginFire()
 {
 	if (OwningCharacter)
 	{
 		OwningCharacter->Server_BeginFire(this);
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("BEGIN FIRE!!!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("BEGIN FIRE!!!"));
 }
 
 void UWeaponComponent::EndFire()
@@ -126,5 +144,5 @@ void UWeaponComponent::EndFire()
 	{
 		OwningCharacter->Server_EndFire(this);
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("END FIRE!!!"));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("END FIRE!!!"));
 }

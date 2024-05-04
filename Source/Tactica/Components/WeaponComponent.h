@@ -16,6 +16,9 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_BeginShot(const FVector& Start, const FVector& End);
+
 	void TraceForTarget();
 
 protected:
@@ -23,6 +26,8 @@ protected:
 	
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void AttachWeapon(ATacticaCharacter* TargetCharacter);
+
+	void DrawLocalFire(const FVector& Start, const FVector& End) const;
 
 private:
 	void BeginFire();
@@ -36,6 +41,12 @@ private:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true"))
+	float DamagePerBullet = 15.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true"))
+	float BulletDistance = 1000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Weapon, meta = (AllowPrivateAccess = "true", ClampMin = "0", ClampMax = "90"))
 	float Spread = 2.f;
