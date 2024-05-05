@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "TacticaPlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -118,7 +119,7 @@ void ATacticaCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ATacticaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if (const APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
@@ -143,7 +144,7 @@ void ATacticaCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 
 void ATacticaCharacter::Move(const FInputActionValue& Value)
 {
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller)
 	{
@@ -161,7 +162,7 @@ void ATacticaCharacter::Move(const FInputActionValue& Value)
 
 void ATacticaCharacter::Look(const FInputActionValue& Value)
 {
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller)
 	{
@@ -180,6 +181,14 @@ void ATacticaCharacter::AnyDamageTaken(AActor* DamagedActor, float Damage, const
 	OnHealthChanged.Broadcast(Health, OldHealth);
 	if (Health <= 0.f)
 	{
+		if (HasAuthority())
+		{
+			if (ATacticaPlayerState* State = InstigatedBy->GetPlayerState<ATacticaPlayerState>())
+			{
+				State->AddPlayerScore();
+			}
+		}
+		
 		Destroy();
 	}
 }

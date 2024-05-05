@@ -1,19 +1,27 @@
 ﻿#include "TacticaHUD.h"
 
+#include "ScoreBoardWidget.h"
 #include "Blueprint/UserWidget.h"
 
 void ATacticaHUD::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (!MainWidgetClass)
+	if (MainWidgetClass)
 	{
-		return;
+		MainWidget = CreateWidget(GetOwningPlayerController(), MainWidgetClass);
+		if (MainWidget)
+		{
+			MainWidget->AddToViewport(0);
+		}
 	}
 	
-	MainWidget = CreateWidget(GetOwningPlayerController(), MainWidgetClass);
-	if (MainWidget)
+	if (ScoreBoardWidgetClass)
 	{
-		MainWidget->AddToViewport();
+		ScoreBoardWidget = CreateWidget<UScoreBoardWidget>(GetOwningPlayerController(), ScoreBoardWidgetClass);
+		if (ScoreBoardWidget)
+		{
+			ScoreBoardWidget->AddToViewport(1);
+		}
 	}
 }
