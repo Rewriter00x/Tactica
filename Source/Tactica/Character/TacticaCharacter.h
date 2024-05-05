@@ -5,7 +5,7 @@
 #include "Logging/LogMacros.h"
 #include "TacticaCharacter.generated.h"
 
-class UWeaponComponent;
+class AWeapon;
 class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
@@ -15,7 +15,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, float);
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnSelectedWeaponChanged, UWeaponComponent*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnSelectedWeaponChanged, AWeapon*);
 
 UCLASS(Abstract, config=Game)
 class ATacticaCharacter : public ACharacter
@@ -27,24 +27,15 @@ public:
 	
 	FORCEINLINE UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
 	FORCEINLINE USkeletalMeshComponent* GetHandsMesh() const { return HandsMesh; }
-	FORCEINLINE UWeaponComponent* GetSelectedWeapon() const { return SelectedWeapon; }
+	FORCEINLINE AWeapon* GetSelectedWeapon() const { return SelectedWeapon; }
 	FORCEINLINE float GetHealth() const { return Health; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	virtual void Destroyed() override;
 
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_BeginFire(UWeaponComponent* Weapon);
-
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_EndFire(UWeaponComponent* Weapon);
-	
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_Reload(UWeaponComponent* Weapon);
-
 	void SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const;
-	void SetSelectedWeapon(UWeaponComponent* Weapon);
+	void SetSelectedWeapon(AWeapon* Weapon);
 
 	FVector GetEyesLocation() const;
 	FVector GetLookAtDirection() const;
@@ -72,7 +63,7 @@ private:
 	void OnRep_Health(float OldValue);
 
 	UFUNCTION()
-	void OnRep_SelectedWeapon(UWeaponComponent* OldValue);
+	void OnRep_SelectedWeapon(AWeapon* OldValue);
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Attach, meta=(AllowPrivateAccess = "true"))
 	FName FPSAttachPointName = TEXT("GripPoint");
@@ -99,7 +90,7 @@ private:
 	UInputAction* LookAction;
 
 	UPROPERTY(ReplicatedUsing=OnRep_SelectedWeapon, Transient)
-	UWeaponComponent* SelectedWeapon = nullptr;
+	AWeapon* SelectedWeapon = nullptr;
 
 };
 

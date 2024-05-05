@@ -2,11 +2,13 @@
 
 #include "Components/TextBlock.h"
 #include "Tactica/Character/TacticaCharacter.h"
-#include "Tactica/Components/WeaponComponent.h"
+#include "Tactica/Weapon/Weapon.h"
 
 void UAmmoCounterWidget::BindPawn(APawn* OldPawn, APawn* NewPawn)
 {
 	Super::BindPawn(OldPawn, NewPawn);
+
+	OnSelectedWeaponAmmoChanged(0, 0);
 
 	if (ATacticaCharacter* Character = Cast<ATacticaCharacter>(OldPawn))
 	{
@@ -20,7 +22,7 @@ void UAmmoCounterWidget::BindPawn(APawn* OldPawn, APawn* NewPawn)
 	}
 }
 
-void UAmmoCounterWidget::OnSelectedWeaponChanged(UWeaponComponent* Weapon)
+void UAmmoCounterWidget::OnSelectedWeaponChanged(AWeapon* Weapon)
 {
 	if (SelectedWeapon)
 	{

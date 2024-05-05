@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "WeaponComponent.generated.h"
+#include "GameFramework/Actor.h"
+#include "Weapon.generated.h"
 
 class ATacticaCharacter;
 class UInputAction;
@@ -10,13 +10,13 @@ class UInputMappingContext;
 
 DECLARE_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChanged, int32, int32);
 
-UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class TACTICA_API UWeaponComponent : public USkeletalMeshComponent
+UCLASS(Abstract)
+class TACTICA_API AWeapon : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	UWeaponComponent();
+	AWeapon();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
@@ -47,7 +47,19 @@ protected:
 
 	void DrawLocalFire(const FVector& Start, const FVector& End) const;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	USkeletalMeshComponent* WeaponMesh;
+
 private:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_BeginFire();
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_EndFire();
+	
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_Reload();
+	
 	UFUNCTION()
 	void OnRep_LoadedAmmo(int32 OldValue);
 

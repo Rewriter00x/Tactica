@@ -8,7 +8,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Net/UnrealNetwork.h"
-#include "Tactica/Components/WeaponComponent.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -62,40 +61,17 @@ void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ATacticaCharacter::Destroyed()
 {
 	OnHealthChanged.Broadcast(0.f, Health);
+
+	if (HasAuthority())
+	{
+		const TArray<AActor*> Copy = Children;
+		for (AActor* Actor : Copy)
+		{
+			Actor->Destroy();
+		}
+	}
 	
 	Super::Destroyed();
-}
-
-bool ATacticaCharacter::Server_BeginFire_Validate(UWeaponComponent* Weapon)
-{
-	return IsValid(Weapon);
-}
-
-void ATacticaCharacter::Server_BeginFire_Implementation(UWeaponComponent* Weapon)
-{
-	Weapon->Shoot();
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER BEGIN FIRE!!!"));
-}
-
-bool ATacticaCharacter::Server_EndFire_Validate(UWeaponComponent* Weapon)
-{
-	return IsValid(Weapon);
-}
-
-void ATacticaCharacter::Server_EndFire_Implementation(UWeaponComponent* Weapon)
-{
-	Weapon->StopAutoFire();
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("SERVER END FIRE!!!"));
-}
-
-bool ATacticaCharacter::Server_Reload_Validate(UWeaponComponent* Weapon)
-{
-	return IsValid(Weapon) && Weapon->CanReload();
-}
-
-void ATacticaCharacter::Server_Reload_Implementation(UWeaponComponent* Weapon)
-{
-	Weapon->PerformReload();
 }
 
 void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) const
@@ -104,7 +80,7 @@ void ATacticaCharacter::SetFPSWeaponMesh(const USkeletalMeshComponent* Weapon) c
 	FPSWeaponMesh->SetMaterial(0, Weapon->GetMaterial(0));
 }
 
-void ATacticaCharacter::SetSelectedWeapon(UWeaponComponent* Weapon)
+void ATacticaCharacter::SetSelectedWeapon(AWeapon* Weapon)
 {
 	SelectedWeapon = Weapon;
 	OnSelectedWeaponChanged.Broadcast(SelectedWeapon);
@@ -213,7 +189,7 @@ void ATacticaCharacter::OnRep_Health(float OldValue)
 	OnHealthChanged.Broadcast(Health, OldValue);
 }
 
-void ATacticaCharacter::OnRep_SelectedWeapon(UWeaponComponent* OldValue)
+void ATacticaCharacter::OnRep_SelectedWeapon(AWeapon* OldValue)
 {
 	OnSelectedWeaponChanged.Broadcast(SelectedWeapon);
 }

@@ -1,4 +1,4 @@
-﻿#include "WeaponComponent.h"
+﻿#include "Weapon.h"
 
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -6,12 +6,16 @@
 #include "Net/UnrealNetwork.h"
 #include "Tactica/Character/TacticaCharacter.h"
 
-UWeaponComponent::UWeaponComponent()
+AWeapon::AWeapon()
 {
-	SetIsReplicatedByDefault(true);
+	bReplicates = true;
+
+	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
+	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SetRootComponent(WeaponMesh);
 }
 
-void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
@@ -20,12 +24,12 @@ void UWeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Out
 	DOREPLIFETIME(ThisClass, SpareAmmo);
 }
 
-void UWeaponComponent::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)
+void AWeapon::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)
 {
 	DrawLocalFire(Start, End);
 }
 
-void UWeaponComponent::TraceForTarget()
+void AWeapon::TraceForTarget()
 {
 	if (ensure(OwningCharacter))
 	{
@@ -39,7 +43,7 @@ void UWeaponComponent::TraceForTarget()
 		FCollisionQueryParams Params;
 		Params.bTraceComplex = false;
 		Params.AddIgnoredActor(OwningCharacter);
-		Params.AddIgnoredComponent(this);
+		Params.AddIgnoredActor(this);
 		GetWorld()->LineTraceSingleByChannel(FiringResult, StartLocation, EndLocation, ECC_Pawn, Params);
 
 		const FVector& HitLocation = FiringResult.Location.IsNearlyZero() ? EndLocation : FiringResult.Location;
@@ -49,12 +53,12 @@ void UWeaponComponent::TraceForTarget()
 		if (ATacticaCharacter* HitCharacter = Cast<ATacticaCharacter>(FiringResult.GetActor()))
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%s hit!"), *HitCharacter->GetFName().ToString()));
-			UGameplayStatics::ApplyDamage(HitCharacter, DamagePerBullet, nullptr, OwningCharacter, UDamageType::StaticClass());
+			UGameplayStatics::ApplyDamage(HitCharacter, DamagePerBullet, OwningCharacter->GetController(), OwningCharacter, UDamageType::StaticClass());
 		}
 	}
 }
 
-void UWeaponComponent::Shoot()
+void AWeapon::Shoot()
 {
 	if (CheckAndCommitCost())
 	{
@@ -66,7 +70,7 @@ void UWeaponComponent::Shoot()
 	}
 }
 
-void UWeaponComponent::StopAutoFire()
+void AWeapon::StopAutoFire()
 {
 	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
 	const float Delay = TimerManager.GetTimerRemaining(ShotDelayHandle);
@@ -74,7 +78,7 @@ void UWeaponComponent::StopAutoFire()
 	TimerManager.SetTimer(ShotDelayHandle, Delay, false);
 }
 
-void UWeaponComponent::PerformReload()
+void AWeapon::PerformReload()
 {
 	int32 Delta = MagazineSize - LoadedAmmo;
 	if (SpareAmmo < Delta && SpareAmmo > 0)
@@ -86,7 +90,7 @@ void UWeaponComponent::PerformReload()
 	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
-void UWeaponComponent::BeginPlay()
+void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
@@ -95,12 +99,12 @@ void UWeaponComponent::BeginPlay()
 	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
-bool UWeaponComponent::CheckCost() const
+bool AWeapon::CheckCost() const
 {
 	return !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle) && LoadedAmmo > 0;
 }
 
-bool UWeaponComponent::CheckAndCommitCost()
+bool AWeapon::CheckAndCommitCost()
 {
 	if (!CheckCost())
 	{
@@ -114,12 +118,12 @@ bool UWeaponComponent::CheckAndCommitCost()
 	return true;
 }
 
-bool UWeaponComponent::CanReload() const
+bool AWeapon::CanReload() const
 {
 	return LoadedAmmo < MagazineSize && SpareAmmo > 0;
 }
 
-void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void AWeapon::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (!OwningCharacter)
 	{
@@ -142,23 +146,18 @@ void UWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetCharacter)
+void AWeapon::AttachWeapon_Implementation(ATacticaCharacter* TargetCharacter)
 {
-	if (GetOwnerRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		OwningCharacter = TargetCharacter;
-		UnregisterComponent();
-		Rename(*GetFName().ToString(), TargetCharacter);
-		RegisterComponent();
+		SetOwner(TargetCharacter);
+		SetInstigator(TargetCharacter);
 		TargetCharacter->SetSelectedWeapon(this);
 	}
 
 	const FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	AttachToComponent(TargetCharacter->GetMesh(), AttachmentRules, TPSAttachPointName);
-	
-	SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	TargetCharacter->AddInstanceComponent(this);
 
 	if (const APlayerController* PlayerController = Cast<APlayerController>(TargetCharacter->GetController()))
 	{
@@ -167,8 +166,8 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 			return;
 		}
 
-		TargetCharacter->SetFPSWeaponMesh(this);
-		SetHiddenInGame(true);
+		TargetCharacter->SetFPSWeaponMesh(WeaponMesh);
+		WeaponMesh->SetHiddenInGame(true);
 		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
@@ -177,17 +176,17 @@ void UWeaponComponent::AttachWeapon_Implementation(ATacticaCharacter* TargetChar
 
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 		{
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &UWeaponComponent::BeginFire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ThisClass::BeginFire);
 			if (bIsAutomatic)
 			{
-				EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UWeaponComponent::EndFire);
+				EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &ThisClass::EndFire);
 			}
-			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &UWeaponComponent::Reload);
+			EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Triggered, this, &ThisClass::Reload);
 		}
 	}
 }
 
-void UWeaponComponent::DrawLocalFire(const FVector& Start, const FVector& End) const
+void AWeapon::DrawLocalFire(const FVector& Start, const FVector& End) const
 {
 	bool Local = false;
 	const AController* Controller = OwningCharacter ? OwningCharacter->GetController() : nullptr;
@@ -198,17 +197,47 @@ void UWeaponComponent::DrawLocalFire(const FVector& Start, const FVector& End) c
 	DrawDebugLine(GetWorld(), Start, End, FColor(243, 156, 18), false, .1f, 0, Local ? .2f : .75f);
 }
 
-void UWeaponComponent::OnRep_LoadedAmmo(int32 OldValue)
+bool AWeapon::Server_BeginFire_Validate()
+{
+	return IsValid(this);
+}
+
+void AWeapon::Server_BeginFire_Implementation()
+{
+	Shoot();
+}
+
+bool AWeapon::Server_EndFire_Validate()
+{
+	return IsValid(this);
+}
+
+void AWeapon::Server_EndFire_Implementation()
+{
+	StopAutoFire();
+}
+
+bool AWeapon::Server_Reload_Validate()
+{
+	return IsValid(this) && CanReload();
+}
+
+void AWeapon::Server_Reload_Implementation()
+{
+	PerformReload();
+}
+
+void AWeapon::OnRep_LoadedAmmo(int32 OldValue)
 {
 	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
-void UWeaponComponent::OnRep_SpareAmmo(int32 OldValue)
+void AWeapon::OnRep_SpareAmmo(int32 OldValue)
 {
 	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
-void UWeaponComponent::BeginFire()
+void AWeapon::BeginFire()
 {
 	if (!OwningCharacter)
 	{
@@ -223,20 +252,17 @@ void UWeaponComponent::BeginFire()
 		}
 	}
 	
-	OwningCharacter->Server_BeginFire(this);
+	Server_BeginFire();
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("BEGIN FIRE!!!"));
 }
 
-void UWeaponComponent::EndFire()
+void AWeapon::EndFire()
 {
-	if (OwningCharacter)
-	{
-		OwningCharacter->Server_EndFire(this);
-	}
+	Server_EndFire();
 	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("END FIRE!!!"));
 }
 
-void UWeaponComponent::Reload()
+void AWeapon::Reload()
 {
 	if (!OwningCharacter)
 	{
@@ -248,7 +274,7 @@ void UWeaponComponent::Reload()
 		return;
 	}
 	
-	OwningCharacter->Server_Reload(this);
+	Server_Reload();
 
 	if (!OwningCharacter->HasAuthority())
 	{
@@ -256,7 +282,7 @@ void UWeaponComponent::Reload()
 	}
 }
 
-void UWeaponComponent::TryShoot()
+void AWeapon::TryShoot()
 {
 	GetWorld()->GetTimerManager().SetTimerForNextTick([this]
 	{

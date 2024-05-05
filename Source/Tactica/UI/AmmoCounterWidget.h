@@ -4,8 +4,8 @@
 #include "TacticaCharacterObserverWidget.h"
 #include "AmmoCounterWidget.generated.h"
 
+class AWeapon;
 class UTextBlock;
-class UWeaponComponent;
 
 UCLASS(Abstract)
 class TACTICA_API UAmmoCounterWidget : public UTacticaCharacterObserverWidget
@@ -19,11 +19,11 @@ protected:
 	UTextBlock* AmmoTextBlock;
 
 private:
-	void OnSelectedWeaponChanged(UWeaponComponent* Weapon);
+	void OnSelectedWeaponChanged(AWeapon* Weapon);
 	void OnSelectedWeaponAmmoChanged(int32 LoadedAmmo, int32 SpareAmmo) const;
 
 	UPROPERTY(Transient)
-	UWeaponComponent* SelectedWeapon = nullptr;
+	AWeapon* SelectedWeapon = nullptr;
 
 	FDelegateHandle WeaponDelegateHandle;
 	FDelegateHandle AmmoDelegateHandle;
