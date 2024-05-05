@@ -24,10 +24,12 @@ class ATacticaCharacter : public ACharacter
 
 public:
 	ATacticaCharacter();
+
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE AWeapon* GetSelectedWeapon() const { return SelectedWeapon; }
 	
 	FORCEINLINE UCameraComponent* GetFirstPersonCamera() const { return FirstPersonCamera; }
 	FORCEINLINE USkeletalMeshComponent* GetHandsMesh() const { return HandsMesh; }
-	FORCEINLINE AWeapon* GetSelectedWeapon() const { return SelectedWeapon; }
 	FORCEINLINE float GetHealth() const { return Health; }
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

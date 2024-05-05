@@ -24,6 +24,16 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	DOREPLIFETIME(ThisClass, SpareAmmo);
 }
 
+void AWeapon::RefillAmmo()
+{
+	if (HasAuthority())
+	{
+		LoadedAmmo = MagazineSize;
+		SpareAmmo = MagazineSize * MagazineCount;
+		OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
+	}
+}
+
 void AWeapon::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)
 {
 	DrawLocalFire(Start, End);
@@ -94,9 +104,7 @@ void AWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	LoadedAmmo = MagazineSize;
-	SpareAmmo = MagazineSize * MagazineCount;
-	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
+	RefillAmmo();
 }
 
 bool AWeapon::CheckCost() const

@@ -20,6 +20,9 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly)
+	void RefillAmmo();
+
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_BeginShot(const FVector& Start, const FVector& End);
 
