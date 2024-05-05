@@ -15,9 +15,10 @@ class TACTICA_API UScoreCellWidget : public UUserWidget
 public:
 	FORCEINLINE ATacticaPlayerState* GetObservingPlayerState() const { return ObservingPlayerState; }
 	
-	void InitCell(ATacticaPlayerState* PlayerState);
+	void SetObservingPlayerState(ATacticaPlayerState* PlayerState);
 	
 protected:
+	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta=(BindWidget))

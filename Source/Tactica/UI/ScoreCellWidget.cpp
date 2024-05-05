@@ -3,11 +3,20 @@
 #include "Components/TextBlock.h"
 #include "Tactica/Character/TacticaPlayerState.h"
 
-void UScoreCellWidget::InitCell(ATacticaPlayerState* PlayerState)
+void UScoreCellWidget::SetObservingPlayerState(ATacticaPlayerState* PlayerState)
 {
 	ObservingPlayerState = PlayerState;
-	DelegateHandle = ObservingPlayerState->OnPlayerScoreChanged.AddUObject(this, &UScoreCellWidget::OnPlayerScoreChanged);
-	OnPlayerScoreChanged(ObservingPlayerState, ObservingPlayerState->GetScore());
+}
+
+void UScoreCellWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (ObservingPlayerState)
+	{
+		DelegateHandle = ObservingPlayerState->OnPlayerScoreChanged.AddUObject(this, &UScoreCellWidget::OnPlayerScoreChanged);
+		OnPlayerScoreChanged(ObservingPlayerState, ObservingPlayerState->GetPlayerScore());
+	}
 }
 
 void UScoreCellWidget::NativeDestruct()

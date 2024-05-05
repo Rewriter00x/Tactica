@@ -28,6 +28,10 @@ private:
 	void OnPlayerStateSpawned(ATacticaPlayerState* PlayerState) const;
 	void OnPlayerStateDeSpawned(ATacticaPlayerState* PlayerState) const;
 
+	void OnPlayerScoreChanged(ATacticaPlayerState* PlayerState, int32 Score) const;
+
+	void SortScoreBoard() const;
+
 	FDelegateHandle PlayerStateSpawnedHandle;
 	FDelegateHandle PlayerStateDeSpawnedHandle;
 	
