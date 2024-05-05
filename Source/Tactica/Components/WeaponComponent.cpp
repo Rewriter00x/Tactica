@@ -56,19 +56,22 @@ void UWeaponComponent::TraceForTarget()
 
 void UWeaponComponent::Shoot()
 {
-	if (bIsAutomatic)
-	{
-		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TryShoot, ShotDelay, true, 0.f);
-	}
-	else if (CheckAndCommitCost())
+	if (CheckAndCommitCost())
 	{
 		TraceForTarget();
+		if (bIsAutomatic)
+		{
+			GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TryShoot, ShotDelay);
+		}
 	}
 }
 
 void UWeaponComponent::StopAutoFire()
 {
-	GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
+	FTimerManager& TimerManager = GetWorld()->GetTimerManager();
+	const float Delay = TimerManager.GetTimerRemaining(ShotDelayHandle);
+	TimerManager.ClearTimer(ShotDelayHandle);
+	TimerManager.SetTimer(ShotDelayHandle, Delay, false);
 }
 
 void UWeaponComponent::PerformReload()
@@ -94,7 +97,7 @@ void UWeaponComponent::BeginPlay()
 
 bool UWeaponComponent::CheckCost() const
 {
-	return (bIsAutomatic || !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle)) && LoadedAmmo > 0;
+	return !GetWorld()->GetTimerManager().IsTimerActive(ShotDelayHandle) && LoadedAmmo > 0;
 }
 
 bool UWeaponComponent::CheckAndCommitCost()
@@ -104,11 +107,9 @@ bool UWeaponComponent::CheckAndCommitCost()
 		return false;
 	}
 
-	if (!bIsAutomatic)
-	{
-		GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, ShotDelay, false);
-	}
+	GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, ShotDelay, false);
 	--LoadedAmmo;
+	
 	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 	return true;
 }
@@ -214,7 +215,7 @@ void UWeaponComponent::BeginFire()
 		return;
 	}
 
-	if (!OwningCharacter->HasAuthority() || !bIsAutomatic)
+	if (!OwningCharacter->HasAuthority())
 	{
 		if (!CheckAndCommitCost()) // client check
 		{
@@ -257,12 +258,16 @@ void UWeaponComponent::Reload()
 
 void UWeaponComponent::TryShoot()
 {
-	if (CheckAndCommitCost())
+	GetWorld()->GetTimerManager().SetTimerForNextTick([this]
 	{
-		TraceForTarget();
-	}
-	else
-	{
-		GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
-	}
+		if (CheckAndCommitCost())
+		{
+			TraceForTarget();
+			GetWorld()->GetTimerManager().SetTimer(ShotDelayHandle, this, &ThisClass::TryShoot, ShotDelay);
+		}
+		else
+		{
+			GetWorld()->GetTimerManager().ClearTimer(ShotDelayHandle);
+		}
+	});
 }
