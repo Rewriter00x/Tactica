@@ -4,6 +4,9 @@
 #include "GameFramework/HUD.h"
 #include "TacticaHUD.generated.h"
 
+struct FInputActionValue;
+class UInputAction;
+class UInputMappingContext;
 class UScoreBoardWidget;
 
 UCLASS(Abstract)
@@ -17,13 +20,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> MainWidgetClass;
 
-	UPROPERTY(BlueprintReadOnly, Transient)
-	UUserWidget* MainWidget;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UUserWidget> ScoreBoardWidgetClass;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UInputMappingContext* ShowMappingContext;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	UInputAction* ShowAction;
+
+	UPROPERTY(BlueprintReadOnly, Transient)
+	UUserWidget* MainWidget;
+
 	UPROPERTY(BlueprintReadOnly, Transient)
 	UScoreBoardWidget* ScoreBoardWidget;
+
+private:
+	void ChangeScoreBoardVisibility(const FInputActionValue& Value);
 	
 };
