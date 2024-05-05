@@ -16,6 +16,15 @@ void UScoreCellWidget::NativeConstruct()
 	{
 		DelegateHandle = ObservingPlayerState->OnPlayerScoreChanged.AddUObject(this, &UScoreCellWidget::OnPlayerScoreChanged);
 		OnPlayerScoreChanged(ObservingPlayerState, ObservingPlayerState->GetPlayerScore());
+
+		if (const AController* Controller = ObservingPlayerState->GetOwningController())
+		{
+			if (Controller->IsLocalPlayerController())
+			{
+				NameText->SetColorAndOpacity(FColor::Green);
+				ScoreText->SetColorAndOpacity(FColor::Green);
+			}
+		}
 	}
 }
 
