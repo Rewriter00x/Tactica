@@ -62,6 +62,7 @@ void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void ATacticaCharacter::Destroyed()
 {
 	OnHealthChanged.Broadcast(0.f, Health);
+	OnSelectedWeaponChanged.Broadcast(nullptr);
 
 	if (HasAuthority())
 	{
@@ -181,7 +182,7 @@ void ATacticaCharacter::AnyDamageTaken(AActor* DamagedActor, float Damage, const
 	OnHealthChanged.Broadcast(Health, OldHealth);
 	if (Health <= 0.f)
 	{
-		if (HasAuthority())
+		if (HasAuthority() && InstigatedBy)
 		{
 			if (ATacticaPlayerState* State = InstigatedBy->GetPlayerState<ATacticaPlayerState>())
 			{

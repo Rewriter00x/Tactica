@@ -35,6 +35,8 @@ void UAmmoCounterWidget::OnSelectedWeaponChanged(AWeapon* Weapon)
 		AmmoDelegateHandle = SelectedWeapon->OnWeaponAmmoChanged.AddUObject(this, &UAmmoCounterWidget::OnSelectedWeaponAmmoChanged);
 		OnSelectedWeaponAmmoChanged(SelectedWeapon->GetLoadedAmmo(), SelectedWeapon->GetSpareAmmo());
 	}
+	
+	SetVisibility(IsValid(Weapon) ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 void UAmmoCounterWidget::OnSelectedWeaponAmmoChanged(int32 LoadedAmmo, int32 SpareAmmo) const
