@@ -12,6 +12,7 @@ AWeapon::AWeapon()
 
 	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	WeaponMesh->SetOwnerNoSee(true);
 	SetRootComponent(WeaponMesh);
 }
 
@@ -172,7 +173,6 @@ void AWeapon::AttachWeapon_Implementation(ATacticaCharacter* TargetCharacter)
 		}
 
 		TargetCharacter->SetFPSWeaponMesh(WeaponMesh);
-		WeaponMesh->SetHiddenInGame(true);
 		
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
