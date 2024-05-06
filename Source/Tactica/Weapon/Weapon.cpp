@@ -20,18 +20,15 @@ void AWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(ThisClass, OwningCharacter);
-	DOREPLIFETIME(ThisClass, LoadedAmmo);
-	DOREPLIFETIME(ThisClass, SpareAmmo);
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, LoadedAmmo, COND_OwnerOnly, REPNOTIFY_OnChanged);
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, SpareAmmo, COND_OwnerOnly, REPNOTIFY_OnChanged);
 }
 
 void AWeapon::RefillAmmo()
 {
-	if (HasAuthority())
-	{
-		LoadedAmmo = MagazineSize;
-		SpareAmmo = MagazineSize * MagazineCount;
-		OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
-	}
+	LoadedAmmo = MagazineSize;
+	SpareAmmo = MagazineSize * MagazineCount;
+	OnWeaponAmmoChanged.Broadcast(LoadedAmmo, SpareAmmo);
 }
 
 void AWeapon::Multicast_BeginShot_Implementation(const FVector& Start, const FVector& End)

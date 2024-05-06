@@ -55,7 +55,7 @@ void ATacticaCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	DOREPLIFETIME_CONDITION(ThisClass, Health, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION_NOTIFY(ThisClass, Health, COND_OwnerOnly, REPNOTIFY_OnChanged);
 	DOREPLIFETIME(ThisClass, SelectedWeapon);
 }
 
