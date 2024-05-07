@@ -19,6 +19,7 @@ public:
 	FORCEINLINE int32 GetPlayerScore() const { return PlayerScore; }
 	
 	void AddPlayerScore();
+	void ClearPlayerScore();
 
 	FOnPlayerScoreChanged OnPlayerScoreChanged;
 

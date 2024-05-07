@@ -16,6 +16,12 @@ void ATacticaPlayerState::AddPlayerScore()
 	OnPlayerScoreChanged.Broadcast(this, PlayerScore);
 }
 
+void ATacticaPlayerState::ClearPlayerScore()
+{
+	PlayerScore = 0;
+	OnPlayerScoreChanged.Broadcast(this, PlayerScore);
+}
+
 void ATacticaPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
