@@ -36,7 +36,7 @@ void ATacticaPlayerState::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (const ATacticaGameState* GameState = Cast<ATacticaGameState>(GetWorld()->GetGameState()))
 	{
-		GameState->OnPlayerStateSpawned.Broadcast(this);
+		GameState->OnPlayerStateDeSpawned.Broadcast(this);
 	}
 	
 	Super::EndPlay(EndPlayReason);
