@@ -22,6 +22,7 @@ void UGameStatusWidget::NativeDestruct()
 	if (TacticaGameState)
 	{
 		TacticaGameState->OnGameStatusChanged.Remove(StatusDelegateHandle);
+		TacticaGameState->OnNumberOfPlayersChanged.Remove(NumberDelegateHandle);
 	}
 	
 	Super::NativeDestruct();
@@ -55,4 +56,5 @@ void UGameStatusWidget::OnGameStatusChanged(EGameStatus Status) const
 
 void UGameStatusWidget::OnNumberOfPlayersChanged(int32 Number) const
 {
+	StatusText->SetText(FText::FromString(FString::Printf(TEXT("Waiting for players: %d/%d"), Number, TacticaGameState->GetMinNumberOfPlayers())));
 }
